@@ -2978,9 +2978,9 @@
                     
                     <div id="heroImagesList" style="display: grid; gap: 15px; margin-bottom: 25px;"></div>
                     
-                    <div style="border: 2px dashed #e0e0e0; padding: 25px; border-radius: 12px; background: #f9f9f9; text-align: center;">
-                        <p style="color: #666; margin-bottom: 15px; font-size: 15px;">📤 Resim yükleyin</p>
-                        <input type="file" id="heroImageInput" accept="image/*" style="width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #e0e0e0; border-radius: 10px; background: white;">
+                    <div style="border: 2px dashed #e0e0e0; padding: 25px; border-radius: 12px; background: #f9f9f9;">
+                        <p style="color: #666; margin-bottom: 15px; font-size: 15px;">📤 Resim URL'si Ekleyin</p>
+                        <input type="text" id="heroImageInput" placeholder="https://raw.githubusercontent.com/ilmekten/ilmekten/main/images/carousel1.jpg" style="width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #e0e0e0; border-radius: 10px; background: white; font-size: 14px;">
                         <button onclick="addHeroImage()" style="width: 100%; padding: 18px; background: var(--red); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#b71c1c'" onmouseout="this.style.background='var(--red)'">
                             ✅ Resim Ekle
                         </button>
@@ -2988,7 +2988,7 @@
                     
                     <div style="margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 10px; border-left: 4px solid #ff9800;">
                         <p style="font-size: 13px; color: #666; margin: 0;">
-                            💡 <strong>İpucu:</strong> Resimler otomatik sıkıştırılır ve ana sayfada döner. Maximum 5MB.
+                            💡 <strong>İpucu:</strong> GitHub'a yüklediğiniz resimlerin URL'lerini kullanın. Resimler ana sayfada otomatik döner.
                         </p>
                     </div>
                 </div>
@@ -3035,11 +3035,13 @@
                             </div>
                             
                             <div class="form-group">
-                                <label>Resimler (En fazla 3)</label>
-                                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">💡 Birden fazla resim seçmek için Ctrl (Windows) veya Cmd (Mac) tuşuna basılı tutun</p>
-                                <input type="file" id="corpImages" accept="image/*" multiple onchange="previewCorporateImages(event)">
-                                <div class="image-preview" id="corpImagePreview">
-                                    <span style="color: #999;">Resim seçilmedi</span>
+                                <label>Resim URL'leri (En fazla 3)</label>
+                                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">💡 GitHub'a yüklediğiniz resimlerin URL'lerini girin</p>
+                                <input type="text" id="corpImage1" placeholder="1. Resim URL'si" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;">
+                                <input type="text" id="corpImage2" placeholder="2. Resim URL'si (opsiyonel)" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:8px;">
+                                <input type="text" id="corpImage3" placeholder="3. Resim URL'si (opsiyonel)" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                                <div class="image-preview" id="corpImagePreview" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+                                    <span style="color: #999;">URL girildiğinde önizleme görünecek</span>
                                 </div>
                             </div>
                             
@@ -7052,8 +7054,19 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
         function openCorporateForm() {
             editingCorporateId = null;
             document.getElementById('corporateForm').reset();
-            document.getElementById('corpImagePreview').innerHTML = '<span style="color: #999;">Resim seçilmedi</span>';
+            document.getElementById('corpImagePreview').innerHTML = '<span style="color: #999;">URL girildiğinde önizleme görünecek</span>';
             document.getElementById('corporateFormModal').style.display = 'block';
+            
+            // Input event listeners ekle
+            setTimeout(() => {
+                ['corpImage1', 'corpImage2', 'corpImage3'].forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.removeEventListener('input', previewCorporateImages);
+                        input.addEventListener('input', previewCorporateImages);
+                    }
+                });
+            }, 100);
         }
         
         function closeCorporateForm() {
@@ -7061,25 +7074,29 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
             editingCorporateId = null;
         }
         
-        function previewCorporateImages(event) {
+        function previewCorporateImages() {
             const preview = document.getElementById('corpImagePreview');
-            const files = event.target.files;
+            const url1 = document.getElementById('corpImage1')?.value.trim();
+            const url2 = document.getElementById('corpImage2')?.value.trim();
+            const url3 = document.getElementById('corpImage3')?.value.trim();
             
-            if (files.length === 0) {
-                preview.innerHTML = '<span style="color: #999;">Resim seçilmedi</span>';
+            const urls = [url1, url2, url3].filter(url => url);
+            
+            if (urls.length === 0) {
+                preview.innerHTML = '<span style="color: #999;">URL girildiğinde önizleme görünecek</span>';
                 return;
             }
             
             preview.innerHTML = '';
-            for (let i = 0; i < Math.min(files.length, 3); i++) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    preview.appendChild(img);
+            urls.forEach((url, i) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #2d5a3d;';
+                img.onerror = () => {
+                    img.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'80\' height=\'80\'%3E%3Crect fill=\'%23ddd\' width=\'80\' height=\'80\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23999\'%3E❌%3C/text%3E%3C/svg%3E';
                 };
-                reader.readAsDataURL(files[i]);
-            }
+                preview.appendChild(img);
+            });
         }
         
         function saveCorporateOrder(event) {
@@ -7089,47 +7106,12 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
             const description = document.getElementById('corpDescription').value;
             const width = parseInt(document.getElementById('corpWidth').value) || 0;
             const height = parseInt(document.getElementById('corpHeight').value) || 0;
-            const imageFiles = document.getElementById('corpImages').files;
             
-            const processImages = () => {
-                const promises = [];
-                for (let i = 0; i < Math.min(imageFiles.length, 3); i++) {
-                    promises.push(new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const img = new Image();
-                            img.onload = () => {
-                                const canvas = document.createElement('canvas');
-                                let w = img.width;
-                                let h = img.height;
-                                const maxSize = 800;
-                                
-                                if (w > maxSize || h > maxSize) {
-                                    if (w > h) {
-                                        h = (h / w) * maxSize;
-                                        w = maxSize;
-                                    } else {
-                                        w = (w / h) * maxSize;
-                                        h = maxSize;
-                                    }
-                                }
-                                
-                                canvas.width = w;
-                                canvas.height = h;
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0, w, h);
-                                
-                                const compressed = canvas.toDataURL('image/jpeg', 0.7);
-                                console.log(`📦 Kurumsal resim sıkıştırıldı: ${(e.target.result.length / 1024).toFixed(0)}KB → ${(compressed.length / 1024).toFixed(0)}KB`);
-                                resolve(compressed);
-                            };
-                            img.src = e.target.result;
-                        };
-                        reader.readAsDataURL(imageFiles[i]);
-                    }));
-                }
-                return Promise.all(promises);
-            };
+            // URL'leri al
+            const url1 = document.getElementById('corpImage1')?.value.trim();
+            const url2 = document.getElementById('corpImage2')?.value.trim();
+            const url3 = document.getElementById('corpImage3')?.value.trim();
+            const images = [url1, url2, url3].filter(url => url);
             
             if (editingCorporateId !== null) {
                 // Güncelleme
@@ -7139,17 +7121,10 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
                     company,
                     description,
                     width,
-                    height
+                    height,
+                    images
                 };
-                
-                if (imageFiles.length > 0) {
-                    processImages().then(images => {
-                        corporateOrders[index].images = images;
-                        finishSaveCorporate('✅ Kurumsal sipariş güncellendi!');
-                    });
-                } else {
-                    finishSaveCorporate('✅ Kurumsal sipariş güncellendi!');
-                }
+                finishSaveCorporate('✅ Kurumsal sipariş güncellendi!');
             } else {
                 // Yeni ekleme
                 const newOrder = {
@@ -7157,19 +7132,10 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
                     description,
                     width,
                     height,
-                    images: []
+                    images
                 };
-                
-                if (imageFiles.length > 0) {
-                    processImages().then(images => {
-                        newOrder.images = images;
-                        corporateOrders.push(newOrder);
-                        finishSaveCorporate('✅ Yeni kurumsal sipariş eklendi!');
-                    });
-                } else {
-                    corporateOrders.push(newOrder);
-                    finishSaveCorporate('✅ Yeni kurumsal sipariş eklendi!');
-                }
+                corporateOrders.push(newOrder);
+                finishSaveCorporate('✅ Yeni kurumsal sipariş eklendi!');
             }
         }
         
@@ -7432,11 +7398,16 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
                             <input type="text" id="productEmoji" required placeholder="🦙" maxlength="2">
                         </div>
                         <div class="form-group">
-                            <label>Resimler (En fazla 3)</label>
-                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">💡 Birden fazla resim seçmek için Ctrl (Windows) veya Cmd (Mac) tuşuna basılı tutun</p>
-                            <input type="file" id="productImage" accept="image/*" multiple onchange="previewImage(event)">
-                            <div class="image-preview" id="imagePreview">
-                                <span style="color: #999;">Resim seçilmedi</span>
+                            <label>Resim URL'leri (En fazla 3)</label>
+                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                                💡 GitHub'a yüklediğiniz resimlerin URL'lerini girin<br>
+                                📝 Format: <code>https://raw.githubusercontent.com/ilmekten/ilmekten/main/images/urun1.jpg</code>
+                            </p>
+                            <input type="text" id="productImage1" placeholder="1. Resim URL'si (ana resim)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:10px;">
+                            <input type="text" id="productImage2" placeholder="2. Resim URL'si (opsiyonel)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:10px;">
+                            <input type="text" id="productImage3" placeholder="3. Resim URL'si (opsiyonel)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;">
+                            <div id="imagePreview" style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
+                                <span style="color: #999;">Resim URL'leri girildiğinde önizleme görünecek</span>
                             </div>
                         </div>
                         <div class="form-actions">
@@ -7532,9 +7503,14 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
                             <input type="text" id="productEmoji" required value="${product.emoji}" maxlength="2">
                         </div>
                         <div class="form-group">
-                            <label>Resimler (En fazla 3)</label>
-                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">💡 Birden fazla resim seçmek için Ctrl (Windows) veya Cmd (Mac) tuşuna basılı tutun</p>
-                            <input type="file" id="productImage" accept="image/*" multiple onchange="previewImage(event)">
+                            <label>Resim URL'leri (En fazla 3)</label>
+                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                                💡 GitHub'a yüklediğiniz resimlerin URL'lerini girin<br>
+                                📝 Format: <code>https://raw.githubusercontent.com/ilmekten/ilmekten/main/images/urun1.jpg</code>
+                            </p>
+                            <input type="text" id="productImage1" placeholder="1. Resim URL'si (ana resim)" value="${product.images && product.images[0] || ''}" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:10px;">
+                            <input type="text" id="productImage2" placeholder="2. Resim URL'si (opsiyonel)" value="${product.images && product.images[1] || ''}" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;margin-bottom:10px;">
+                            <input type="text" id="productImage3" placeholder="3. Resim URL'si (opsiyonel)" value="${product.images && product.images[2] || ''}" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;">
                             <div class="image-preview" id="imagePreview">
                                 ${imagesPreview}
                             </div>
@@ -7549,39 +7525,43 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
             formContainer.scrollIntoView({ behavior: 'smooth' });
         }
         
-        function previewImage(event) {
-            const files = event.target.files;
+        function previewImage() {
+            const url1 = document.getElementById('productImage1')?.value;
+            const url2 = document.getElementById('productImage2')?.value;
+            const url3 = document.getElementById('productImage3')?.value;
             const preview = document.getElementById('imagePreview');
             
-            if (files.length === 0) {
-                preview.innerHTML = '<span style="color: #999;">Resim seçilmedi</span>';
+            const urls = [url1, url2, url3].filter(url => url && url.trim());
+            
+            if (urls.length === 0) {
+                preview.innerHTML = '<span style="color: #999;">Resim URL\'leri girildiğinde önizleme görünecek</span>';
                 return;
             }
             
-            const maxFiles = Math.min(files.length, 3);
             preview.innerHTML = '';
-            
-            for (let i = 0; i < maxFiles; i++) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const imgDiv = document.createElement('div');
-                    imgDiv.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
-                    imgDiv.innerHTML = `
-                        <img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; border: 2px solid var(--red);">
-                        <span style="position: absolute; top: -8px; right: -8px; background: var(--red); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">${i + 1}</span>
-                    `;
-                    preview.appendChild(imgDiv);
-                };
-                reader.readAsDataURL(files[i]);
-            }
-            
-            if (files.length > 3) {
-                const warning = document.createElement('p');
-                warning.style.cssText = 'color: var(--red); font-size: 12px; margin-top: 10px;';
-                warning.textContent = `⚠️ En fazla 3 resim yüklenebilir. İlk 3 resim seçildi.`;
-                preview.appendChild(warning);
-            }
+            urls.forEach((url, i) => {
+                const imgDiv = document.createElement('div');
+                imgDiv.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+                imgDiv.innerHTML = `
+                    <img src="${url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; border: 2px solid var(--red);" 
+                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'%3E%3Crect fill=\\'%23ddd\\' width=\\'100\\' height=\\'100\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%23999\\'%3E❌%3C/text%3E%3C/svg%3E'">
+                    <span style="position: absolute; top: -8px; right: -8px; background: var(--red); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">${i + 1}</span>
+                `;
+                preview.appendChild(imgDiv);
+            });
         }
+        
+        // URL inputlarına oninput event ekle
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                ['productImage1', 'productImage2', 'productImage3'].forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.addEventListener('input', previewImage);
+                    }
+                });
+            }, 500);
+        });
         
         function saveProduct(event) {
             event.preventDefault();
@@ -7597,58 +7577,13 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
             const discount = parseInt(document.getElementById('productDiscount').value) || 0;
             const storySelect = document.getElementById('productStory').value;
             const storyIndex = storySelect === '' ? null : parseInt(storySelect);
-            const imageFiles = document.getElementById('productImage').files;
             
-            // Resim işleme fonksiyonu
-            // Resim sıkıştırma ve işleme fonksiyonu
-            const processImages = () => {
-                const promises = [];
-                for (let i = 0; i < Math.min(imageFiles.length, 3); i++) {
-                    promises.push(new Promise((resolve) => {
-                        const file = imageFiles[i];
-                        const reader = new FileReader();
-                        
-                        reader.onload = (e) => {
-                            const img = new Image();
-                            img.onload = () => {
-                                // Canvas ile resmi sıkıştır
-                                const canvas = document.createElement('canvas');
-                                let width = img.width;
-                                let height = img.height;
-                                
-                                // Maksimum boyut: 800px (her iki yönde de)
-                                const maxSize = 800;
-                                if (width > maxSize || height > maxSize) {
-                                    if (width > height) {
-                                        height = (height / width) * maxSize;
-                                        width = maxSize;
-                                    } else {
-                                        width = (width / height) * maxSize;
-                                        height = maxSize;
-                                    }
-                                }
-                                
-                                canvas.width = width;
-                                canvas.height = height;
-                                
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0, width, height);
-                                
-                                // JPEG olarak sıkıştır (kalite: 0.7 = %70)
-                                const compressedData = canvas.toDataURL('image/jpeg', 0.7);
-                                
-                                console.log(`📦 Resim sıkıştırıldı: ${(e.target.result.length / 1024).toFixed(0)}KB → ${(compressedData.length / 1024).toFixed(0)}KB`);
-                                
-                                resolve(compressedData);
-                            };
-                            img.src = e.target.result;
-                        };
-                        
-                        reader.readAsDataURL(file);
-                    }));
-                }
-                return Promise.all(promises);
-            };
+            // URL'leri al
+            const imageUrl1 = document.getElementById('productImage1')?.value.trim();
+            const imageUrl2 = document.getElementById('productImage2')?.value.trim();
+            const imageUrl3 = document.getElementById('productImage3')?.value.trim();
+            
+            const images = [imageUrl1, imageUrl2, imageUrl3].filter(url => url);
             
             if (editingProductId) {
                 // Ürünü güncelle
@@ -7664,17 +7599,10 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
                     width,
                     height,
                     production_days,
-                    storyIndex
+                    storyIndex,
+                    images
                 };
-                
-                if (imageFiles.length > 0) {
-                    processImages().then(images => {
-                        products[productIndex].images = images;
-                        finishSave('✅ Ürün başarıyla güncellendi!');
-                    });
-                } else {
-                    finishSave('✅ Ürün başarıyla güncellendi!');
-                }
+                finishSave('✅ Ürün başarıyla güncellendi!');
             } else {
                 // Yeni ürün ekle
                 const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
@@ -7690,19 +7618,10 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
                     height,
                     production_days,
                     storyIndex,
-                    images: []
+                    images
                 };
-                
-                if (imageFiles.length > 0) {
-                    processImages().then(images => {
-                        newProduct.images = images;
-                        products.push(newProduct);
-                        finishSave('✅ Yeni ürün başarıyla eklendi!');
-                    });
-                } else {
-                    products.push(newProduct);
-                    finishSave('✅ Yeni ürün başarıyla eklendi!');
-                }
+                products.push(newProduct);
+                finishSave('✅ Yeni ürün başarıyla eklendi!');
             }
         }
         
@@ -9039,40 +8958,26 @@ Sabah olduğunda çocuklar uyanır, mutlu gülümserler. Gece gördükleri güze
         
         function addHeroImage() {
             const input = document.getElementById('heroImageInput');
-            const file = input?.files[0];
+            const imageUrl = input?.value.trim();
             
-            if (!file) {
-                alert('Lütfen bir resim seçin!');
+            if (!imageUrl) {
+                alert('Lütfen bir resim URL\'si girin!');
                 return;
             }
             
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Resim 5MB\'dan küçük olmalı!');
+            // URL formatı kontrolü
+            if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+                alert('Lütfen geçerli bir URL girin (http:// veya https:// ile başlamalı)');
                 return;
             }
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    if (w > 800) { h = (h * 800) / w; w = 800; }
-                    canvas.width = w;
-                    canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    
-                    heroImages.push(canvas.toDataURL('image/png'));
-                    saveHeroImages();
-                    renderHeroImagesList();
-                    updateHeroCarousel();
-                    
-                    input.value = '';
-                    showToast('Başarılı', 'Resim eklendi!', 'success');
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            heroImages.push(imageUrl);
+            saveHeroImages();
+            renderHeroImagesList();
+            updateHeroCarousel();
+            
+            input.value = '';
+            showToast('Başarılı', 'Resim eklendi!', 'success');
         }
         
         function deleteHeroImage(index) {
